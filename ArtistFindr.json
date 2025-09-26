@@ -1,0 +1,2331 @@
+{
+  "name": "ArtistFindr",
+  "nodes": [
+    {
+      "parameters": {
+        "resource": "playlist",
+        "operation": "get",
+        "id": "={{ $('Switch').item.json.body.playlistID }}"
+      },
+      "type": "n8n-nodes-base.spotify",
+      "typeVersion": 1,
+      "position": [
+        1160,
+        -920
+      ],
+      "id": "b5f22649-1efd-4ce5-811d-ff42d40606a5",
+      "name": "Spotify2",
+      "credentials": {
+        "spotifyOAuth2Api": {
+          "id": "I4aAR5mjjZ0NUQ1k",
+          "name": "Spotify account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "playlist",
+        "operation": "getTracks",
+        "id": "={{ $json.id }}",
+        "returnAll": true
+      },
+      "type": "n8n-nodes-base.spotify",
+      "typeVersion": 1,
+      "position": [
+        1340,
+        -920
+      ],
+      "id": "33770ee6-9052-42a8-8244-dbee3efa2ee0",
+      "name": "Spotify3",
+      "credentials": {
+        "spotifyOAuth2Api": {
+          "id": "I4aAR5mjjZ0NUQ1k",
+          "name": "Spotify account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        1560,
+        -920
+      ],
+      "id": "307345fb-e8ea-4fb7-ba0b-ce73a7d33ee7",
+      "name": "Loop Over Items1"
+    },
+    {
+      "parameters": {
+        "resource": "artist",
+        "id": "={{ $('Loop Over Items1').item.json.track.artists[0].uri }}"
+      },
+      "type": "n8n-nodes-base.spotify",
+      "typeVersion": 1,
+      "position": [
+        1780,
+        -920
+      ],
+      "id": "74760d81-4858-4b5b-a14f-1171918f5d58",
+      "name": "Spotify4",
+      "credentials": {
+        "spotifyOAuth2Api": {
+          "id": "I4aAR5mjjZ0NUQ1k",
+          "name": "Spotify account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "3da92f51-ac9d-4055-ac1d-6baff52ebbe2",
+              "leftValue": "={{ $json.followers.total }}",
+              "rightValue": 20000,
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            },
+            {
+              "id": "f09a7a08-9c8e-4d69-bf5e-08c127029d72",
+              "leftValue": "={{ $json.followers.total }}",
+              "rightValue": 150000,
+              "operator": {
+                "type": "number",
+                "operation": "lt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1160,
+        -760
+      ],
+      "id": "0cf7fcf7-3909-40ed-8d15-19025a6a6c74",
+      "name": "If1"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "subreddit": "SpotifyPlaylists",
+        "limit": "={{ $('Switch').item.json.body.scrapeCount }}",
+        "filters": {
+          "category": "new"
+        }
+      },
+      "type": "n8n-nodes-base.reddit",
+      "typeVersion": 1,
+      "position": [
+        380,
+        -820
+      ],
+      "id": "3ad08030-900f-46b4-a4c2-fc121c2b8884",
+      "name": "Reddit1",
+      "credentials": {
+        "redditOAuth2Api": {
+          "id": "3BZq693Np4Ur368u",
+          "name": "Reddit account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        600,
+        -820
+      ],
+      "id": "ed6bd885-c2bc-4cac-a14d-789424ee32a7",
+      "name": "Loop Over Items2"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "e6cf91e7-ff5c-457f-a0f4-59796ac3d08b",
+              "leftValue": "={{ $json.link_flair_text }}",
+              "rightValue": "={{ $('Switch').item.json.body.genre }}",
+              "operator": {
+                "type": "string",
+                "operation": "equals",
+                "name": "filter.operator.equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        600,
+        -620
+      ],
+      "id": "296cc67f-3dd6-4b7a-b960-7a1e87168899",
+      "name": "If3"
+    },
+    {
+      "parameters": {
+        "resource": "playlist",
+        "operation": "get",
+        "id": "={{ $('If3').item.json.playlistId }}"
+      },
+      "type": "n8n-nodes-base.spotify",
+      "typeVersion": 1,
+      "position": [
+        800,
+        -400
+      ],
+      "id": "73e6fd37-d544-4512-af3e-22ba0ae4fffb",
+      "name": "Spotify5",
+      "alwaysOutputData": true,
+      "credentials": {
+        "spotifyOAuth2Api": {
+          "id": "I4aAR5mjjZ0NUQ1k",
+          "name": "Spotify account"
+        }
+      },
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "jsCode": "function getPlaylistId(url) {\n  // Remove query parameters if present\n  const cleanUrl = url.split('?')[0];\n  // Split by '/' and get the last segment which is the playlist ID\n  const segments = cleanUrl.split('/');\n  return segments[segments.length - 1];\n}\n\nreturn items.map(item => {\n  const url = item.json.url;\n  const playlistId = getPlaylistId(url);\n  return {\n    json: {\n      ...item.json,\n      playlistId: playlistId\n    }\n  };\n});"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        380,
+        -620
+      ],
+      "id": "c3546952-9bf3-4614-94e6-b153a9c446eb",
+      "name": "Code"
+    },
+    {
+      "parameters": {
+        "content": "## Playlist Scraper",
+        "height": 1000,
+        "width": 780,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        340,
+        -980
+      ],
+      "id": "284b2a96-8ff0-4a54-be5b-3ced0159e3db",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "content": "## Artist Scraper",
+        "height": 360,
+        "width": 780,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1140,
+        -980
+      ],
+      "id": "bcbb2cbd-6cf3-40b8-8e63-072f107566b5",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "667d98e7-f5ca-4060-8f04-55f1d63eaecd",
+        "responseMode": "responseNode",
+        "options": {
+          "allowedOrigins": "*"
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        140,
+        -1520
+      ],
+      "id": "ea613cc5-b165-4fc7-b15b-08450f76eb68",
+      "name": "Webhook",
+      "webhookId": "667d98e7-f5ca-4060-8f04-55f1d63eaecd"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.3,
+      "position": [
+        1780,
+        -1520
+      ],
+      "id": "d369880c-4fa8-4b30-b9d5-af3b0f95df46",
+      "name": "Respond to Webhook",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.body.serviceType }}",
+                    "rightValue": "scrape_playlist",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "153d985c-c14a-49d1-aa5b-d00d4b81105e"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Scrape Playlist"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "f036ff10-aef9-48c0-b89f-8f085836f8f1",
+                    "leftValue": "={{ $json.body.serviceType }}",
+                    "rightValue": "find_artist",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Find Artist"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        100,
+        -1300
+      ],
+      "id": "e51f9e10-0776-4426-849d-6a2d39efe4b2",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "fieldsToAggregate": {
+          "fieldToAggregate": [
+            {}
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        980,
+        -960
+      ],
+      "id": "707583ba-303a-42a7-80e1-db41929fb6b4",
+      "name": "Aggregate"
+    },
+    {
+      "parameters": {
+        "tableId": "playlist",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "playlistID",
+              "fieldValue": "={{ $json.playlistID }}"
+            },
+            {
+              "fieldId": "curator",
+              "fieldValue": "={{ $json.curator }}"
+            },
+            {
+              "fieldId": "playlistImage",
+              "fieldValue": "={{ $json.playlistImage }}"
+            },
+            {
+              "fieldId": "playlistLink",
+              "fieldValue": "={{ $json.playlistLink }}"
+            },
+            {
+              "fieldId": "genre",
+              "fieldValue": "={{ $('Webhook').item.json.body.genre }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        800,
+        -820
+      ],
+      "id": "8b6d623d-44e7-47d2-ac7c-6efedce82ac4",
+      "name": "Supabase",
+      "credentials": {
+        "supabaseApi": {
+          "id": "4at7InsZOzNE4e2x",
+          "name": "artistfindr"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "tableId": "playlist",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "playlistID",
+              "keyValue": "={{ $json.playlistId }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        380,
+        -400
+      ],
+      "id": "3f2956b4-d206-46b0-b879-9d2ead26664e",
+      "name": "Supabase1",
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "4at7InsZOzNE4e2x",
+          "name": "artistfindr"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "b9e0fb78-98fa-4b05-8a2b-ebfd3d3fc424",
+              "leftValue": "={{ $json.playlistID }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "empty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        600,
+        -400
+      ],
+      "id": "e2559b44-b126-4cd3-bcee-27442862e6bc",
+      "name": "If4"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "run",
+        "returnAll": true
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        360,
+        -1300
+      ],
+      "id": "87233bd6-e4c6-4dbe-a7b0-58b46c6b6874",
+      "name": "Supabase2",
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "4at7InsZOzNE4e2x",
+          "name": "artistfindr"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "tableId": "run",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "playlistID",
+              "fieldValue": "={{ $json.id }}"
+            },
+            {
+              "fieldId": "curator",
+              "fieldValue": "={{ $json.owner.display_name }}"
+            },
+            {
+              "fieldId": "playlistImage",
+              "fieldValue": "={{ $json.images[0].url }}"
+            },
+            {
+              "fieldId": "playlistLink",
+              "fieldValue": "={{ $json.external_urls.spotify }}"
+            },
+            {
+              "fieldId": "genre",
+              "fieldValue": "={{ $('Webhook').item.json.body.genre }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        800,
+        -620
+      ],
+      "id": "1b5384cc-3977-4ea8-84be-08c2f7032869",
+      "name": "Supabase4",
+      "credentials": {
+        "supabaseApi": {
+          "id": "4at7InsZOzNE4e2x",
+          "name": "artistfindr"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "707f2e46-6b2a-4c01-9078-48851f5aa4dd",
+              "leftValue": "={{ $json.playlistID }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "empty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        500,
+        -1300
+      ],
+      "id": "18e9567c-fdcd-4ed7-b437-4cd4914490d6",
+      "name": "If6"
+    },
+    {
+      "parameters": {
+        "content": "## Clear Playlist Run Query",
+        "height": 360,
+        "width": 780,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        340,
+        -1360
+      ],
+      "id": "9b7d25eb-5bca-43c0-97fc-8dfe19f36be6",
+      "name": "Sticky Note2"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "39870b55-c5df-440b-9bd7-f7f15c3883d1",
+              "leftValue": "={{ $json.id }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "empty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1000,
+        -400
+      ],
+      "id": "20cbe630-3bf1-4b9c-a9e4-9046812557a2",
+      "name": "If5"
+    },
+    {
+      "parameters": {
+        "tableId": "run",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "playlistID",
+              "fieldValue": "={{ $json.playlistID }}"
+            },
+            {
+              "fieldId": "curator",
+              "fieldValue": "={{ $json.curator }}"
+            },
+            {
+              "fieldId": "playlistImage",
+              "fieldValue": "={{ $json.playlistImage }}"
+            },
+            {
+              "fieldId": "playlistLink",
+              "fieldValue": "={{ $json.playlistLink }}"
+            },
+            {
+              "fieldId": "genre",
+              "fieldValue": "={{ $('Webhook').item.json.body.genre }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1000,
+        -820
+      ],
+      "id": "38f248af-5df3-48b9-8346-8a1ecd0dc8de",
+      "name": "Supabase5",
+      "credentials": {
+        "supabaseApi": {
+          "id": "4at7InsZOzNE4e2x",
+          "name": "artistfindr"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Playlist Output",
+        "height": 220,
+        "width": 780,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        340,
+        40
+      ],
+      "id": "e7d6d89d-b74e-4289-a32b-8ed483bf88a0",
+      "name": "Sticky Note3"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "run",
+        "returnAll": true
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        360,
+        100
+      ],
+      "id": "a8419d2e-fcb8-42d3-9d3a-815c0f7427c1",
+      "name": "Supabase6",
+      "credentials": {
+        "supabaseApi": {
+          "id": "4at7InsZOzNE4e2x",
+          "name": "artistfindr"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fieldsToAggregate": {
+          "fieldToAggregate": [
+            {
+              "fieldToAggregate": "playlistID"
+            },
+            {
+              "fieldToAggregate": "curator"
+            },
+            {
+              "fieldToAggregate": "playlistImage"
+            },
+            {
+              "fieldToAggregate": "playlistLink"
+            },
+            {
+              "fieldToAggregate": "genre"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        960,
+        100
+      ],
+      "id": "8b1004b8-df8f-41dc-94bb-3f51957c68eb",
+      "name": "Aggregate2"
+    },
+    {
+      "parameters": {
+        "content": "## Main Switch",
+        "height": 1620,
+        "color": 7
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        80,
+        -1360
+      ],
+      "id": "9a3c9d01-fba8-4986-9dd1-f5e0fe259080",
+      "name": "Sticky Note4"
+    },
+    {
+      "parameters": {
+        "content": "## Output",
+        "height": 220,
+        "width": 200,
+        "color": 3
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1720,
+        -1600
+      ],
+      "id": "7280b9d0-3f86-41aa-b1b2-244708d69588",
+      "name": "Sticky Note6"
+    },
+    {
+      "parameters": {
+        "tableId": "artist_run",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "name",
+              "fieldValue": "={{ $json.name }}"
+            },
+            {
+              "fieldId": "spotify_link",
+              "fieldValue": "={{ $json.external_urls.spotify }}"
+            },
+            {
+              "fieldId": "artistID",
+              "fieldValue": "={{ $json.id }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1340,
+        -760
+      ],
+      "id": "ac27b6f1-1123-4e80-9c80-f8c319eec0b8",
+      "name": "Supabase7",
+      "credentials": {
+        "supabaseApi": {
+          "id": "4at7InsZOzNE4e2x",
+          "name": "artistfindr"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fieldsToAggregate": {
+          "fieldToAggregate": [
+            {}
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        1560,
+        -760
+      ],
+      "id": "f7618d23-24fa-4b96-a8f6-a1647e3ab603",
+      "name": "Aggregate3"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "artist_run",
+        "returnAll": true
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1160,
+        -1300
+      ],
+      "id": "866e091d-acd6-4b51-867d-26b912e5f95e",
+      "name": "Supabase8",
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "4at7InsZOzNE4e2x",
+          "name": "artistfindr"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "707f2e46-6b2a-4c01-9078-48851f5aa4dd",
+              "leftValue": "={{ $json.artistID }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "empty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1280,
+        -1300
+      ],
+      "id": "b4b0d121-2498-4cb6-b94d-2cf64cbb198e",
+      "name": "If"
+    },
+    {
+      "parameters": {
+        "content": "## Clear Playlist Run Query",
+        "height": 360,
+        "width": 780,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1140,
+        -1360
+      ],
+      "id": "36b09fdf-51b5-4d52-a283-3b411b0c3f53",
+      "name": "Sticky Note7"
+    },
+    {
+      "parameters": {
+        "jsCode": "return $input.all()[0].json.results.map(artist => ({\n  json: {\n    artistName: artist.artistName,\n    imageSrc: artist.imageSrc,\n    username: artist.username,\n    followers: artist.followers,\n    monthlyListeners: artist.monthlyListeners,\n    cities: artist.cities,\n    socialLink: artist.socialLink,\n    durationMs: artist.durationMs,\n    artistId: artist.artistId,\n    error: artist.error\n  }\n}));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1340,
+        -280
+      ],
+      "id": "3379e7c2-4da1-4e7e-986d-75df0eee6f46",
+      "name": "Code1"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        1560,
+        -280
+      ],
+      "id": "d8e7e193-c6c5-4988-86ac-88874745e623",
+      "name": "Loop Over Items4"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "b72d8348-f76f-4c7d-b289-88b4c6b3de3d",
+              "leftValue": "={{ $json.monthlyListeners }}",
+              "rightValue": "={{ $('Switch').item.json.body.minListeners }}",
+              "operator": {
+                "type": "number",
+                "operation": "gt"
+              }
+            },
+            {
+              "id": "3b6bef79-1e9d-4dab-b7eb-9643d7184b80",
+              "leftValue": "={{ $json.monthlyListeners }}",
+              "rightValue": "={{ $('Switch').item.json.body.maxListeners }}",
+              "operator": {
+                "type": "number",
+                "operation": "lt"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1160,
+        -120
+      ],
+      "id": "e4535747-d43a-4e75-8e05-6d32c23a0502",
+      "name": "If2"
+    },
+    {
+      "parameters": {
+        "tableId": "artist",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "artist",
+              "fieldValue": "={{ $('If2').item.json.artistName }}"
+            },
+            {
+              "fieldId": "followers",
+              "fieldValue": "={{ $('If2').item.json.followers }}"
+            },
+            {
+              "fieldId": "monthlyListeners",
+              "fieldValue": "={{ $('If2').item.json.monthlyListeners }}"
+            },
+            {
+              "fieldId": "socialLink",
+              "fieldValue": "={{ $('If2').item.json.socialLink }}"
+            },
+            {
+              "fieldId": "artistID",
+              "fieldValue": "={{ $('If2').item.json.artistId }}"
+            },
+            {
+              "fieldId": "imageLink",
+              "fieldValue": "={{ $('Loop Over Items4').item.json.imageSrc }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1760,
+        -120
+      ],
+      "id": "ad4f9cce-432d-47eb-8f44-eb3ed3e72bbb",
+      "name": "Supabase10",
+      "credentials": {
+        "supabaseApi": {
+          "id": "4at7InsZOzNE4e2x",
+          "name": "artistfindr"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "tableId": "artist",
+        "filters": {
+          "conditions": [
+            {
+              "keyName": "artistID",
+              "keyValue": "={{ $json.artistId }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1340,
+        -120
+      ],
+      "id": "2aed6cd7-5869-4249-aa05-a25bca381bbb",
+      "name": "Supabase11",
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "4at7InsZOzNE4e2x",
+          "name": "artistfindr"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "23ead346-8cd5-4db6-8b5d-368a401b5fc9",
+              "leftValue": "={{ $json.artistID }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1560,
+        -120
+      ],
+      "id": "c2aa53c2-491d-459d-a38d-e895d146756c",
+      "name": "If7"
+    },
+    {
+      "parameters": {
+        "content": "## Monthly Listener Check",
+        "height": 360,
+        "width": 780,
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1140,
+        -340
+      ],
+      "id": "bd80fba2-c306-4b8d-892f-11dd8862a56f",
+      "name": "Sticky Note8"
+    },
+    {
+      "parameters": {
+        "content": "## PREP SCRAP",
+        "height": 240,
+        "width": 780
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1140,
+        -600
+      ],
+      "id": "75f05804-616b-45db-891c-6a2330b33a9f",
+      "name": "Sticky Note9"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "artist_run",
+        "returnAll": true
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1160,
+        -540
+      ],
+      "id": "da0d88b9-d010-4d1a-b453-625ca756a90d",
+      "name": "Supabase12",
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "4at7InsZOzNE4e2x",
+          "name": "artistfindr"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fieldsToAggregate": {
+          "fieldToAggregate": [
+            {
+              "fieldToAggregate": "artistID"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        1540,
+        -540
+      ],
+      "id": "9739ff00-c236-4a72-a77b-20d56e463878",
+      "name": "Aggregate5"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://host.docker.internal:3000/scrape",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\"artistIds\": {{ $json.artistID.toJsonString() }}, \"enablePause\": false}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1160,
+        -280
+      ],
+      "id": "84154e0e-500d-4896-b3ce-dbf5fdbccf5a",
+      "name": "HTTP Request1"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "artist_send",
+        "returnAll": true
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1160,
+        -1140
+      ],
+      "id": "141a8610-f20e-4f51-be90-1dbd3760e499",
+      "name": "Supabase13",
+      "alwaysOutputData": true,
+      "credentials": {
+        "supabaseApi": {
+          "id": "4at7InsZOzNE4e2x",
+          "name": "artistfindr"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "tableId": "artist_send",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "artist",
+              "fieldValue": "={{ $('If2').item.json.artistName }}"
+            },
+            {
+              "fieldId": "followers",
+              "fieldValue": "={{ $('If2').item.json.followers }}"
+            },
+            {
+              "fieldId": "monthlyListeners",
+              "fieldValue": "={{ $('If2').item.json.monthlyListeners }}"
+            },
+            {
+              "fieldId": "socialLink",
+              "fieldValue": "={{ $('If2').item.json.socialLink }}"
+            },
+            {
+              "fieldId": "artistID",
+              "fieldValue": "={{ $('If2').item.json.artistId }}"
+            },
+            {
+              "fieldId": "imageLink",
+              "fieldValue": "={{ $('Loop Over Items4').item.json.imageSrc }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1760,
+        -280
+      ],
+      "id": "e5c25b58-417d-439e-b129-91e2203be9b5",
+      "name": "Supabase15",
+      "credentials": {
+        "supabaseApi": {
+          "id": "4at7InsZOzNE4e2x",
+          "name": "artistfindr"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fieldsToAggregate": {
+          "fieldToAggregate": [
+            {}
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        1340,
+        -540
+      ],
+      "id": "dba09ef2-f134-48c2-933b-c52f9a51b7e9",
+      "name": "Aggregate6",
+      "alwaysOutputData": false
+    },
+    {
+      "parameters": {
+        "content": "## Playlist Output",
+        "height": 220,
+        "width": 780,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        1140,
+        40
+      ],
+      "id": "d9f4c4bb-8f33-464f-9083-e4d4c7ada7e7",
+      "name": "Sticky Note10"
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "artist_send",
+        "returnAll": true
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        1160,
+        100
+      ],
+      "id": "4ded7baa-2820-42b5-bdcb-9c52a4ca2784",
+      "name": "Supabase16",
+      "credentials": {
+        "supabaseApi": {
+          "id": "4at7InsZOzNE4e2x",
+          "name": "artistfindr"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "fieldsToAggregate": {
+          "fieldToAggregate": [
+            {
+              "fieldToAggregate": "artist"
+            },
+            {
+              "fieldToAggregate": "followers"
+            },
+            {
+              "fieldToAggregate": "monthlyListeners"
+            },
+            {
+              "fieldToAggregate": "socialLink"
+            },
+            {
+              "fieldToAggregate": "artistID"
+            },
+            {
+              "fieldToAggregate": "imageLink"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        1800,
+        100
+      ],
+      "id": "7ac54346-c393-4072-ba63-f3ebc2211da4",
+      "name": "Aggregate7"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "5d41fb21-dd48-4569-9fc8-46a0c218199e",
+              "name": "genre",
+              "value": "={{ $('Webhook').item.json.body.genre }}",
+              "type": "string"
+            },
+            {
+              "id": "6d7ed7fc-e383-42be-be19-a29d262f651b",
+              "name": "created_at",
+              "value": "={{ $json.created_at }}",
+              "type": "string"
+            },
+            {
+              "id": "75d33752-7513-4974-be57-d98939bfc708",
+              "name": "playlistID",
+              "value": "={{ $json.playlistID }}",
+              "type": "string"
+            },
+            {
+              "id": "94a975a2-6c68-4ece-b64a-4eaa7f81fe12",
+              "name": "curator",
+              "value": "={{ $json.curator }}",
+              "type": "string"
+            },
+            {
+              "id": "27d76e8b-19de-4473-91a6-e3791d20307f",
+              "name": "playlistImage",
+              "value": "={{ $json.playlistImage }}",
+              "type": "string"
+            },
+            {
+              "id": "19f42fa4-9074-4410-8b78-8ab656fcec54",
+              "name": "playlistLink",
+              "value": "={{ $json.playlistLink }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        660,
+        100
+      ],
+      "id": "1869a08c-fd72-4226-9084-32a4d4544bb4",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "fieldsToAggregate": {
+          "fieldToAggregate": [
+            {}
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        680,
+        -1300
+      ],
+      "id": "c18adfae-1fb8-40c3-9dc5-fe41fb2d4958",
+      "name": "Aggregate1"
+    },
+    {
+      "parameters": {
+        "method": "DELETE",
+        "url": "https://sluxpmpaendnibtsftmq.supabase.co/rest/v1/run",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "id",
+              "value": "gt.0"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNsdXhwbXBhZW5kbmlidHNmdG1xIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0OTA5NTc5NiwiZXhwIjoyMDY0NjcxNzk2fQ.PL57feZ4CXllwYpofDTmbjvZoVqk8xwrrcwnjwcuHZU"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNsdXhwbXBhZW5kbmlidHNmdG1xIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0OTA5NTc5NiwiZXhwIjoyMDY0NjcxNzk2fQ.PL57feZ4CXllwYpofDTmbjvZoVqk8xwrrcwnjwcuHZU"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        840,
+        -1300
+      ],
+      "id": "1ade8ef8-6063-4fbd-a0e9-d7335b07f146",
+      "name": "Delete Query Run"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "707f2e46-6b2a-4c01-9078-48851f5aa4dd",
+              "leftValue": "={{ $json.artistID }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "empty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1280,
+        -1140
+      ],
+      "id": "7e555b86-3707-4bf3-9cf3-f430f3c62363",
+      "name": "If8"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.1,
+      "position": [
+        1660,
+        -1220
+      ],
+      "id": "b361de88-5635-4603-985e-d6ae2bdc6bad",
+      "name": "Merge"
+    },
+    {
+      "parameters": {
+        "fieldsToAggregate": {
+          "fieldToAggregate": [
+            {}
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        1800,
+        -1220
+      ],
+      "id": "90b47224-e365-445a-b26a-b8d83dd54910",
+      "name": "Aggregate4"
+    },
+    {
+      "parameters": {
+        "method": "DELETE",
+        "url": "https://sluxpmpaendnibtsftmq.supabase.co/rest/v1/artist_run",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "id",
+              "value": "gt.0"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNsdXhwbXBhZW5kbmlidHNmdG1xIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0OTA5NTc5NiwiZXhwIjoyMDY0NjcxNzk2fQ.PL57feZ4CXllwYpofDTmbjvZoVqk8xwrrcwnjwcuHZU"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNsdXhwbXBhZW5kbmlidHNmdG1xIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0OTA5NTc5NiwiZXhwIjoyMDY0NjcxNzk2fQ.PL57feZ4CXllwYpofDTmbjvZoVqk8xwrrcwnjwcuHZU"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1520,
+        -1300
+      ],
+      "id": "77824234-9c6a-4fda-a192-b50c03404e76",
+      "name": "Delete Query Run1"
+    },
+    {
+      "parameters": {
+        "fieldsToAggregate": {
+          "fieldToAggregate": [
+            {}
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        1400,
+        -1300
+      ],
+      "id": "21947e3d-23e5-4be8-807a-6fe6aa69c81d",
+      "name": "Aggregate8"
+    },
+    {
+      "parameters": {
+        "fieldsToAggregate": {
+          "fieldToAggregate": [
+            {}
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        1400,
+        -1140
+      ],
+      "id": "18285145-8f90-4d04-ac0f-aa6b3c488263",
+      "name": "Aggregate9"
+    },
+    {
+      "parameters": {
+        "method": "DELETE",
+        "url": "https://sluxpmpaendnibtsftmq.supabase.co/rest/v1/artist_send",
+        "sendQuery": true,
+        "queryParameters": {
+          "parameters": [
+            {
+              "name": "id",
+              "value": "gt.0"
+            }
+          ]
+        },
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "apikey",
+              "value": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNsdXhwbXBhZW5kbmlidHNmdG1xIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0OTA5NTc5NiwiZXhwIjoyMDY0NjcxNzk2fQ.PL57feZ4CXllwYpofDTmbjvZoVqk8xwrrcwnjwcuHZU"
+            },
+            {
+              "name": "Authorization",
+              "value": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InNsdXhwbXBhZW5kbmlidHNmdG1xIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc0OTA5NTc5NiwiZXhwIjoyMDY0NjcxNzk2fQ.PL57feZ4CXllwYpofDTmbjvZoVqk8xwrrcwnjwcuHZU"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1520,
+        -1140
+      ],
+      "id": "c0b24968-ea52-4eb3-8ff5-a68c9028bc37",
+      "name": "Delete Query Run2"
+    },
+    {
+      "parameters": {
+        "content": "## Get Request",
+        "height": 220,
+        "color": 4
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        80,
+        -1600
+      ],
+      "id": "3fbdc24f-6609-43f2-ad17-6fb33a6ec832",
+      "name": "Sticky Note11"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Input is an array of objects, each containing an artistID array\nreturn items.map(item => ({\n  json: {\n    artistID: [...new Set(item.json.artistID)] // Remove duplicates using Set\n  }\n}));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1740,
+        -540
+      ],
+      "id": "df3914ef-462e-4c8a-bb83-62e4f0c7c639",
+      "name": "Code2"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Spotify2": {
+      "main": [
+        [
+          {
+            "node": "Spotify3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Spotify3": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items1": {
+      "main": [
+        [
+          {
+            "node": "Aggregate3",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Spotify4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Spotify4": {
+      "main": [
+        [
+          {
+            "node": "If1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If1": {
+      "main": [
+        [
+          {
+            "node": "Supabase7",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop Over Items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reddit1": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items2": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Code",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If3": {
+      "main": [
+        [
+          {
+            "node": "Supabase1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop Over Items2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code": {
+      "main": [
+        [
+          {
+            "node": "If3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Spotify5": {
+      "main": [
+        [
+          {
+            "node": "If5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "Supabase2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Supabase8",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Supabase13",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate": {
+      "main": [
+        [
+          {
+            "node": "Supabase6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase1": {
+      "main": [
+        [
+          {
+            "node": "If4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If4": {
+      "main": [
+        [
+          {
+            "node": "Spotify5",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Supabase5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase4": {
+      "main": [
+        [
+          {
+            "node": "Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase2": {
+      "main": [
+        [
+          {
+            "node": "If6",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If6": {
+      "main": [
+        [
+          {
+            "node": "Reddit1",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Aggregate1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If5": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Supabase4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase5": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase6": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate2": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase7": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase8": {
+      "main": [
+        [
+          {
+            "node": "If",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Aggregate8",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code1": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items4": {
+      "main": [
+        [
+          {
+            "node": "Aggregate6",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "If2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If2": {
+      "main": [
+        [
+          {
+            "node": "Supabase11",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Loop Over Items4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase10": {
+      "main": [
+        [
+          {
+            "node": "Supabase15",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase11": {
+      "main": [
+        [
+          {
+            "node": "If7",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If7": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items4",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Supabase10",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate3": {
+      "main": [
+        [
+          {
+            "node": "Supabase12",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase12": {
+      "main": [
+        [
+          {
+            "node": "Aggregate5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate5": {
+      "main": [
+        [
+          {
+            "node": "Code2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request1": {
+      "main": [
+        [
+          {
+            "node": "Code1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase13": {
+      "main": [
+        [
+          {
+            "node": "If8",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase15": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate6": {
+      "main": [
+        [
+          {
+            "node": "Supabase16",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Supabase16": {
+      "main": [
+        [
+          {
+            "node": "Aggregate7",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate7": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Aggregate2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate1": {
+      "main": [
+        [
+          {
+            "node": "Delete Query Run",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete Query Run": {
+      "main": [
+        [
+          {
+            "node": "Reddit1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "If8": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ],
+        [
+          {
+            "node": "Aggregate9",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Merge": {
+      "main": [
+        [
+          {
+            "node": "Aggregate4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate8": {
+      "main": [
+        [
+          {
+            "node": "Delete Query Run1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete Query Run1": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate9": {
+      "main": [
+        [
+          {
+            "node": "Delete Query Run2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Delete Query Run2": {
+      "main": [
+        [
+          {
+            "node": "Merge",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Aggregate4": {
+      "main": [
+        [
+          {
+            "node": "Spotify2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Code2": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "0b211870-628c-4676-a02d-b5c3a2c1ad8e",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "558d88703fb65b2d0e44613bc35916258b0f0bf983c5d4730c00c424b77ca36a"
+  },
+  "id": "DeQxccrZFMKYGx3N",
+  "tags": []
+}

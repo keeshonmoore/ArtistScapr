@@ -1,0 +1,89 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+@layer base {
+  :root {
+    --background: 340 33.3% 98.6%; /* #FBF9FA */
+    --foreground: 0 0% 11%; /* #1c1c1c */
+    --card: 340 33.3% 98.6%; /* #FBF9FA */
+    --card-foreground: 0 0% 11%; /* #1c1c1c */
+    --popover: 340 33.3% 98.6%; /* #FBF9FA */
+    --popover-foreground: 0 0% 11%; /* #1c1c1c */
+    --primary: 340 33.3% 98.6%; /* #FBF9FA */
+    --primary-foreground: 0 0% 11%; /* #1c1c1c */
+    --secondary: 146 67.6% 33.7%; /* #188645 */
+    --secondary-foreground: 340 33.3% 98.6%; /* #FBF9FA */
+    --muted: 65 25.6% 57.3%; /* #AAAE79 */
+    --muted-foreground: 0 0% 11% / 0.7; /* #1c1c1c with opacity */
+    --accent: 144 83.3% 45.1%; /* #14D061 */
+    --accent-foreground: 0 0% 11%; /* #1c1c1c */
+    --destructive: 0 84.2% 60.2%; /* Shadcn default */
+    --destructive-foreground: 340 33.3% 98.6%; /* #FBF9FA */
+    --border: 65 25.6% 57.3% / 0.3; /* #AAAE79 with opacity */
+    --input: 65 25.6% 57.3% / 0.3; /* #AAAE79 with opacity */
+    --ring: 144 83.3% 45.1%; /* #14D061 */
+    --chart-1: 144 83.3% 45.1%; /* #14D061 */
+    --chart-2: 146 67.6% 33.7%; /* #188645 */
+    --chart-3: 65 25.6% 57.3%; /* #AAAE79 */
+    --chart-4: 340 33.3% 98.6%; /* #FBF9FA */
+    --chart-5: 0 0% 11%; /* #1c1c1c */
+    --radius: 0.5rem;
+    --sidebar-background: 340 33.3% 98.6%; /* #FBF9FA */
+    --sidebar-foreground: 0 0% 11%; /* #1c1c1c */
+    --sidebar-primary: 144 83.3% 45.1%; /* #14D061 */
+    --sidebar-primary-foreground: 0 0% 11%; /* #1c1c1c */
+    --sidebar-accent: 146 67.6% 33.7%; /* #188645 */
+    --sidebar-accent-foreground: 340 33.3% 98.6%; /* #FBF9FA */
+    --sidebar-border: 65 25.6% 57.3% / 0.3; /* #AAAE79 with opacity */
+    --sidebar-ring: 144 83.3% 45.1%; /* #14D061 */
+  }
+
+  .dark {
+    --background: 0 0% 11%; /* #1c1c1c */
+    --foreground: 340 33.3% 98.6%; /* #FBF9FA */
+    --card: 0 0% 13%; /* Slightly lighter #212121 */
+    --card-foreground: 340 33.3% 98.6%; /* #FBF9FA */
+    --popover: 0 0% 13%; /* #212121 */
+    --popover-foreground: 340 33.3% 98.6%; /* #FBF9FA */
+    --primary: 340 33.3% 98.6%; /* #FBF9FA */
+    --primary-foreground: 0 0% 11%; /* #1c1c1c */
+    --secondary: 146 67.6% 33.7%; /* #188645 */
+    --secondary-foreground: 340 33.3% 98.6%; /* #FBF9FA */
+    --muted: 65 25.6% 57.3%; /* #AAAE79 */
+    --muted-foreground: 340 33.3% 98.6% / 0.7; /* #FBF9FA with opacity */
+    --accent: 144 83.3% 45.1%; /* #14D061 */
+    --accent-foreground: 0 0% 11%; /* #1c1c1c */
+    --destructive: 0 62.8% 30.6%; /* Shadcn default */
+    --destructive-foreground: 340 33.3% 98.6%; /* #FBF9FA */
+    --border: 0 0% 20% / 0.3; /* #333333 with opacity */
+    --input: 0 0% 20% / 0.3; /* #333333 with opacity */
+    --ring: 144 83.3% 45.1%; /* #14D061 */
+    --chart-1: 144 83.3% 45.1%; /* #14D061 */
+    --chart-2: 146 67.6% 33.7%; /* #188645 */
+    --chart-3: 65 25.6% 57.3%; /* #AAAE79 */
+    --chart-4: 340 33.3% 98.6%; /* #FBF9FA */
+    --chart-5: 0 0% 11%; /* #1c1c1c */
+    --sidebar-background: 0 0% 11%; /* #1c1c1c */
+    --sidebar-foreground: 340 33.3% 98.6%; /* #FBF9FA */
+    --sidebar-primary: 144 83.3% 45.1%; /* #14D061 */
+    --sidebar-primary-foreground: 0 0% 11%; /* #1c1c1c */
+    --sidebar-accent: 146 67.6% 33.7%; /* #188645 */
+    --sidebar-accent-foreground: 340 33.3% 98.6%; /* #FBF9FA */
+    --sidebar-border: 0 0% 20% / 0.3; /* #333333 with opacity */
+    --sidebar-ring: 144 83.3% 45.1%; /* #14D061 */
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
