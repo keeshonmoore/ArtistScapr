@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -48,22 +48,8 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Badge } from "@/components/ui/badge";
 import { Card, CardBody, Typography } from "@material-tailwind/react";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "@/components/ui/carousel";
+import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
-
-// Fetch wrapper with abort signal and custom timeout
-const fetchWithAbort = async (url, options, timeoutMs = 600000) => {
-  const controller = options.signal ? new AbortController() : options.controller;
-  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
-
-  try {
-    const response = await fetch(url, { ...options, signal: controller.signal });
-    clearTimeout(timeoutId);
-    return response;
-  } catch (error) {
-    clearTimeout(timeoutId);
-    throw error;
-  }
-};
 
 const formSchema = z.object({
   playlistId: z.string().nonempty("Please select a playlist"),
@@ -88,7 +74,8 @@ export default function FindArtist() {
   const [fetchError, setFetchError] = useState(null);
   const [openMin, setOpenMin] = useState(false);
   const [openMax, setOpenMax] = useState(false);
-  const [abortController, setAbortController] = useState(null);
+  const [eventSource, setEventSource] = useState(null);
+  const [progress, setProgress] = useState({ current: 0, total: 0, percentage: 0 });
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -113,40 +100,31 @@ export default function FindArtist() {
         const { data: { user } } = await supabase.auth.getUser();
         console.log("Current user:", user ? user.id : "No authenticated user");
 
-        // Use lowercase column names
         const { data, error } = await supabase
           .from("playlist")
           .select("id, playlistid, curator, playlistimage, playlistlink")
           .order("created_at", { ascending: false });
 
         if (error) {
-          console.error("Supabase query error:", {
-            message: error.message,
-            details: error.details,
-            hint: error.hint,
-            code: error.code,
-          });
-          throw new Error(`Failed to fetch playlists: ${error.message} (Code: ${error.code})`);
+          console.error("Supabase query error:", error);
+          throw new Error(`Failed to fetch playlists: ${error.message}`);
         }
 
-        console.log("Fetched playlists:", data);
         setPlaylists(data || []);
         if (!data || data.length === 0) {
-          toast.info("No playlists found in the database. Ensure playlists are saved via Scrape Playlist or check RLS permissions.");
+          toast.info("No playlists found. Please scrape a playlist first.");
         }
 
         // Auto-fill playlist from navigation state
         const { selectedPlaylistId } = location.state || {};
         if (selectedPlaylistId && data?.find((p) => p.playlistid === selectedPlaylistId)) {
           form.setValue("playlistId", selectedPlaylistId, { shouldValidate: true });
-          console.log("Auto-filled playlist:", selectedPlaylistId);
-          // Clear state after using it
           navigate(location.pathname, { replace: true, state: {} });
         }
       } catch (error) {
         console.error("Error fetching playlists:", error.message);
         setFetchError(error.message);
-        toast.error(`Failed to fetch playlists: ${error.message}. Check console for details.`);
+        toast.error(`Failed to fetch playlists: ${error.message}`);
       } finally {
         setIsFetchingPlaylists(false);
       }
@@ -159,151 +137,133 @@ export default function FindArtist() {
     form.setValue("playlistId", playlistId, { shouldValidate: true });
   };
 
-  const handleCancel = () => {
-    if (abortController) {
-      abortController.abort();
+  const handleCancel = useCallback(() => {
+    if (eventSource) {
+      eventSource.close();
+      setEventSource(null);
       setIsLoading(false);
       toast.info("Artist search cancelled.");
     }
-  };
+  }, [eventSource]);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (eventSource) {
+        eventSource.close();
+      }
+    };
+  }, [eventSource]);
 
   const onSubmit = async (data) => {
+    // Reset state
+    setArtists([]);
+    setProgress({ current: 0, total: 0, percentage: 0 });
     setIsLoading(true);
-    const controller = new AbortController();
-    setAbortController(controller);
 
     try {
-      const webhookUrl = import.meta.env.VITE_N8N_WEBHOOK_URL;
-      if (!webhookUrl) {
-        throw new Error("Webhook URL is not defined in environment variables.");
-      }
-
-      const selectedPlaylist = playlists.find((p) => p.playlistid === data.playlistId);
-      if (!selectedPlaylist) {
-        throw new Error("Selected playlist not found.");
-      }
-
+      // Use environment variable or default to localhost
+      const apiUrl = import.meta.env.VITE_SPOTIFY_API_URL || 'http://localhost:5000';
+      
       const payload = {
-        serviceType: "find_artist",
         playlistID: data.playlistId,
-        playlistLink: selectedPlaylist.playlistlink,
         minListeners: data.minListeners,
         maxListeners: data.maxListeners,
       };
-      console.log("FindArtist webhook request:", JSON.stringify(payload, null, 2));
 
-      const response = await fetchWithAbort(
-        webhookUrl,
-        {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-          signal: controller.signal,
-        },
-        600000 // 10-minute timeout
-      );
+      console.log("Starting artist search with:", payload);
 
-      console.log("FindArtist webhook response status:", response.status);
-      console.log("FindArtist webhook response headers:", Object.fromEntries(response.headers));
+      // Create EventSource for streaming
+      const response = await fetch(`${apiUrl}/api/find-artists`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
 
       if (!response.ok) {
-        const errorText = await response.text();
-        console.error("FindArtist webhook error text:", errorText);
-        throw new Error(`Webhook request failed: ${response.status} - ${errorText}`);
+        throw new Error(`API request failed: ${response.status}`);
       }
 
-      const contentType = response.headers.get("content-type");
-      if (!contentType || !contentType.includes("application/json")) {
-        const text = await response.text();
-        console.error("FindArtist non-JSON response:", text);
-        throw new Error(`Expected JSON, received ${contentType || "unknown content type"}: ${text}`);
-      }
+      // Create EventSource-like streaming from fetch
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
 
-      const responseText = await response.text();
-      if (!responseText) {
-        console.error("FindArtist empty response body");
-        throw new Error("Webhook returned an empty response");
-      }
+      const processStream = async () => {
+        while (true) {
+          const { done, value } = await reader.read();
+          
+          if (done) {
+            break;
+          }
 
-      let responseData;
-      try {
-        responseData = JSON.parse(responseText);
-        console.log("FindArtist webhook response data:", JSON.stringify(responseData, null, 2));
-      } catch (jsonError) {
-        console.error("FindArtist JSON parse error:", jsonError);
-        console.error("FindArtist raw response text:", responseText);
-        throw new Error(`Failed to parse webhook response as JSON: ${jsonError.message}`);
-      }
+          buffer += decoder.decode(value, { stream: true });
+          const lines = buffer.split('\n');
+          buffer = lines.pop() || '';
 
-      // Normalize response to array
-      const normalizedData = Array.isArray(responseData) ? responseData : [responseData];
-      console.log("FindArtist normalized data:", JSON.stringify(normalizedData, null, 2));
+          for (const line of lines) {
+            if (line.startsWith('data: ')) {
+              const jsonStr = line.slice(6);
+              if (jsonStr.trim()) {
+                try {
+                  const event = JSON.parse(jsonStr);
+                  handleStreamEvent(event);
+                } catch (e) {
+                  console.error('Failed to parse SSE data:', e);
+                }
+              }
+            }
+          }
+        }
+      };
 
-      // Extract artists from response.body or directly from response
-      let artistArray = [];
-      let body;
+      await processStream();
 
-      // Check for nested response.body structure
-      if (normalizedData.length > 0 && normalizedData[0].response?.body) {
-        body = normalizedData[0].response.body;
-        console.log("Using nested response.body structure");
-      } else if (normalizedData.length > 0 && normalizedData[0].artist) {
-        body = normalizedData[0];
-        console.log("Using flatter response structure");
-      } else {
-        console.warn("FindArtist invalid response structure:", responseData);
-        throw new Error("Invalid webhook response structure: missing artist data");
-      }
-
-      console.log("FindArtist response body:", JSON.stringify(body, null, 2));
-
-      const artistCount = Math.min(
-        body.artist?.length || 0,
-        body.followers?.length || 0,
-        body.monthlyListeners?.length || 0,
-        body.socialLink?.length || 0,
-        body.artistID?.length || 0,
-        body.imageLink?.length || 0
-      );
-      console.log("FindArtist artist count:", artistCount);
-
-      for (let i = 0; i < artistCount; i++) {
-        artistArray.push({
-          artistId: body.artistID[i] || `unknown-${i}`,
-          name: body.artist[i] || "Unknown Artist",
-          followers: Number(body.followers[i]) || 0,
-          monthlyListeners: Number(body.monthlyListeners[i]) || 0,
-          socialLink: body.socialLink[i] || "#",
-          imageLink: body.imageLink[i] || "https://placehold.co/150x150?text=Artist",
-        });
-      }
-      console.log("FindArtist artist array:", JSON.stringify(artistArray, null, 2));
-
-      if (artistArray.length > 0) {
-        setArtists(artistArray);
-        form.reset();
-        toast.success(`Received ${artistArray.length} artists!`);
-      } else {
-        console.warn("FindArtist no valid artists found in response:", responseData);
-        toast.warning("No artists found in response. Check console for details.");
-      }
     } catch (error) {
-      console.error("FindArtist webhook error:", error);
-      if (error.name === 'AbortError') {
-        toast.info("Artist search was cancelled or timed out after 10 minutes.");
-      } else {
-        toast.error(`Failed to process webhook: ${error.message}`);
-      }
+      console.error("Artist search error:", error);
+      toast.error(`Failed to search artists: ${error.message}`);
     } finally {
       setIsLoading(false);
-      setAbortController(null);
+      setEventSource(null);
     }
   };
 
-  // Debug state changes
-  useEffect(() => {
-    console.log("Artists state updated:", JSON.stringify(artists, null, 2));
-  }, [artists]);
+  const handleStreamEvent = (event) => {
+    console.log("Stream event:", event);
+
+    switch (event.type) {
+      case 'artist':
+        setArtists(prev => [...prev, event.data]);
+        setProgress(event.progress);
+        toast.success(`Found artist: ${event.data.artist}`);
+        break;
+
+      case 'progress':
+        setProgress(event.data);
+        break;
+
+      case 'error':
+        console.error("Artist error:", event.data);
+        toast.error(`Error processing ${event.data.artist}: ${event.data.error}`);
+        break;
+
+      case 'complete':
+        console.log("Search complete:", event.data);
+        toast.success(`Search complete! Processed ${event.data.total_processed} artists.`);
+        setIsLoading(false);
+        break;
+
+      case 'fatal_error':
+        console.error("Fatal error:", event.data);
+        toast.error(`Search failed: ${event.data.error}`);
+        setIsLoading(false);
+        break;
+
+      case 'heartbeat':
+        // Keep connection alive
+        break;
+    }
+  };
 
   const selectedPlaylistId = form.watch("playlistId");
 
@@ -329,7 +289,7 @@ export default function FindArtist() {
             <p className="text-center">Loading playlists...</p>
           ) : fetchError ? (
             <p className="text-center text-destructive">
-              Error loading playlists: {fetchError}. Check console for details.
+              Error loading playlists: {fetchError}
             </p>
           ) : playlists.length > 0 ? (
             <Carousel className="w-full max-w-4xl mx-auto">
@@ -362,8 +322,9 @@ export default function FindArtist() {
               <CarouselNext className="bg-accent text-accent-foreground hover:bg-accent/90" />
             </Carousel>
           ) : (
-            <p className="text-center text-muted-foreground">No playlists available. Ensure playlists are saved via Scrape Playlist or check RLS permissions.</p>
+            <p className="text-center text-muted-foreground">No playlists available.</p>
           )}
+          
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <ShadcnCard className="bg-card shadow-apple rounded-apple border-none">
@@ -543,73 +504,86 @@ export default function FindArtist() {
               </ShadcnCard>
             </form>
           </Form>
+          
           {isLoading && (
-            <div className="text-center text-muted-foreground flex flex-col items-center gap-2">
-              <Loader2 className="h-8 w-8 animate-spin text-accent" />
-              <p>Searching for artists, this may take up to 10 minutes...</p>
+            <div className="space-y-4">
+              <div className="text-center text-muted-foreground flex flex-col items-center gap-2">
+                <Loader2 className="h-8 w-8 animate-spin text-accent" />
+                <p>Searching for artists... {progress.current > 0 && `(${progress.current}/${progress.total})`}</p>
+              </div>
+              {progress.percentage > 0 && (
+                <Progress value={progress.percentage} className="w-full max-w-md mx-auto" />
+              )}
             </div>
           )}
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {artists.map((artist, index) => {
-              console.log(`Rendering artist ${index}:`, artist);
-              return (
-                <Card
-                  key={`${artist.artistId}-${index}`}
-                  className="rounded-apple shadow-apple bg-card border-none overflow-hidden transition-all duration-300 hover:shadow-[0_8px_24px_rgba(20,208,97,0.2)] hover:-translate-y-1"
-                >
-                  <div className="relative">
-                    <img
-                      src={artist.imageLink}
-                      alt="Artist image"
-                      className="w-full h-48 object-cover"
-                    />
-                    <Badge className="absolute top-2 right-2 bg-accent text-accent-foreground hover:bg-accent/90 rounded-apple">
-                      Saved
-                    </Badge>
-                  </div>
-                  <CardBody className="p-4 space-y-2">
-                    <Typography variant="h6" className="text-foreground font-semibold truncate">
-                      {artist.name}
-                    </Typography>
-                    <div className="space-y-1">
-                      <Typography variant="small" className="text-muted-foreground flex items-center gap-1">
-                        <span className="font-medium text-foreground">Followers:</span>
-                        <span>{artist.followers.toLocaleString()}</span>
-                      </Typography>
-                      <Typography variant="small" className="text-muted-foreground flex items-center gap-1">
-                        <span className="font-medium text-foreground">Monthly Listeners:</span>
-                        <span>{artist.monthlyListeners.toLocaleString()}</span>
-                      </Typography>
+          
+          {/* Live results */}
+          {artists.length > 0 && (
+            <div className="space-y-4">
+              <h2 className="text-xl font-semibold text-foreground">
+                Found {artists.length} artist{artists.length !== 1 ? 's' : ''} matching your criteria
+              </h2>
+              
+              <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {artists.map((artist, index) => (
+                  <Card
+                    key={`${artist.artistid}-${index}`}
+                    className="rounded-apple shadow-apple bg-card border-none overflow-hidden transition-all duration-300 hover:shadow-[0_8px_24px_rgba(20,208,97,0.2)] hover:-translate-y-1 animate-in fade-in slide-in-from-bottom-2 duration-300"
+                  >
+                    <div className="relative">
+                      <img
+                        src={artist.imagelink}
+                        alt="Artist image"
+                        className="w-full h-48 object-cover"
+                      />
+                      <Badge className="absolute top-2 right-2 bg-accent text-accent-foreground hover:bg-accent/90 rounded-apple">
+                        Live
+                      </Badge>
                     </div>
-                    <div className="flex gap-2 pt-2">
-                      <Button
-                        asChild
-                        variant="outline"
-                        size="sm"
-                        className="rounded-apple border-accent text-accent hover:bg-accent hover:text-accent-foreground flex items-center gap-1"
-                      >
-                        <a href={`https://open.spotify.com/artist/${artist.artistId}`} target="_blank" rel="noopener noreferrer">
-                          <Music className="h-4 w-4" />
-                          Spotify
-                        </a>
-                      </Button>
-                      <Button
-                        asChild
-                        variant="outline"
-                        size="sm"
-                        className="rounded-apple border-accent text-accent hover:bg-accent hover:text-accent-foreground flex items-center gap-1"
-                      >
-                        <a href={artist.socialLink} target="_blank" rel="noopener noreferrer">
-                          <Camera className="h-4 w-4" />
-                          Instagram
-                        </a>
-                      </Button>
-                    </div>
-                  </CardBody>
-                </Card>
-              );
-            })}
-          </div>
+                    <CardBody className="p-4 space-y-2">
+                      <Typography variant="h6" className="text-foreground font-semibold truncate">
+                        {artist.artist}
+                      </Typography>
+                      <div className="space-y-1">
+                        <Typography variant="small" className="text-muted-foreground flex items-center gap-1">
+                          <span className="font-medium text-foreground">Followers:</span>
+                          <span>{artist.followers.toLocaleString()}</span>
+                        </Typography>
+                        <Typography variant="small" className="text-muted-foreground flex items-center gap-1">
+                          <span className="font-medium text-foreground">Monthly Listeners:</span>
+                          <span>{artist.monthlylisteners.toLocaleString()}</span>
+                        </Typography>
+                      </div>
+                      <div className="flex gap-2 pt-2">
+                        <Button
+                          asChild
+                          variant="outline"
+                          size="sm"
+                          className="rounded-apple border-accent text-accent hover:bg-accent hover:text-accent-foreground flex items-center gap-1"
+                        >
+                          <a href={`https://open.spotify.com/artist/${artist.artistid}`} target="_blank" rel="noopener noreferrer">
+                            <Music className="h-4 w-4" />
+                            Spotify
+                          </a>
+                        </Button>
+                        <Button
+                          asChild
+                          variant="outline"
+                          size="sm"
+                          className="rounded-apple border-accent text-accent hover:bg-accent hover:text-accent-foreground flex items-center gap-1"
+                        >
+                          <a href={artist.sociallink} target="_blank" rel="noopener noreferrer">
+                            <Camera className="h-4 w-4" />
+                            Instagram
+                          </a>
+                        </Button>
+                      </div>
+                    </CardBody>
+                  </Card>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </SidebarInset>
