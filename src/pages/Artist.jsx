@@ -27,14 +27,29 @@ import {
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
-import { Card, CardBody, Typography } from "@material-tailwind/react";
-import { Trash2, Music, Camera, RefreshCw } from "lucide-react";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Trash2, Music, Camera, RefreshCw, Download } from "lucide-react";
 import { cn } from "@/lib/utils";
+import * as XLSX from "xlsx";
 
 export default function Artist() {
   const [artists, setArtists] = useState([]);
+  const [filteredArtists, setFilteredArtists] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [fetchError, setFetchError] = useState(null);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [minFollowers, setMinFollowers] = useState("");
+  const [maxFollowers, setMaxFollowers] = useState("");
+  const [minMonthlyListeners, setMinMonthlyListeners] = useState("");
+  const [maxMonthlyListeners, setMaxMonthlyListeners] = useState("");
+  const [sortBy, setSortBy] = useState("date_desc");
 
   const fetchArtists = async () => {
     setIsLoading(true);
@@ -51,7 +66,6 @@ export default function Artist() {
         throw new Error(`Failed to fetch user: ${userError.message}`);
       }
 
-      // Using lowercase column names
       const { data, error } = await supabase
         .from("artist")
         .select("id, created_at, artist, followers, monthlylisteners, sociallink, artistid, imagelink")
@@ -69,7 +83,6 @@ export default function Artist() {
 
       console.log("Artists fetched:", data);
       
-      // Map the lowercase column names to camelCase
       const mappedData = data?.map(artist => ({
         id: artist.id,
         created_at: artist.created_at,
@@ -98,6 +111,61 @@ export default function Artist() {
     fetchArtists();
   }, []);
 
+  useEffect(() => {
+    let filtered = artists;
+    if (searchTerm) {
+      filtered = filtered.filter(artist =>
+        artist.artist?.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+    }
+    if (minFollowers) {
+      const min = parseInt(minFollowers);
+      if (!isNaN(min)) {
+        filtered = filtered.filter(artist => parseInt(artist.followers || 0) >= min);
+      }
+    }
+    if (maxFollowers) {
+      const max = parseInt(maxFollowers);
+      if (!isNaN(max)) {
+        filtered = filtered.filter(artist => parseInt(artist.followers || 0) <= max);
+      }
+    }
+    if (minMonthlyListeners) {
+      const min = parseInt(minMonthlyListeners);
+      if (!isNaN(min)) {
+        filtered = filtered.filter(artist => parseInt(artist.monthlyListeners || 0) >= min);
+      }
+    }
+    if (maxMonthlyListeners) {
+      const max = parseInt(maxMonthlyListeners);
+      if (!isNaN(max)) {
+        filtered = filtered.filter(artist => parseInt(artist.monthlyListeners || 0) <= max);
+      }
+    }
+
+    let sorted = [...filtered];
+    switch (sortBy) {
+      case "followers_asc":
+        sorted.sort((a, b) => parseInt(a.followers || 0) - parseInt(b.followers || 0));
+        break;
+      case "followers_desc":
+        sorted.sort((a, b) => parseInt(b.followers || 0) - parseInt(a.followers || 0));
+        break;
+      case "listeners_asc":
+        sorted.sort((a, b) => parseInt(a.monthlyListeners || 0) - parseInt(b.monthlyListeners || 0));
+        break;
+      case "listeners_desc":
+        sorted.sort((a, b) => parseInt(b.monthlyListeners || 0) - parseInt(a.monthlyListeners || 0));
+        break;
+      case "date_desc":
+        sorted.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+        break;
+      default:
+        break;
+    }
+    setFilteredArtists(sorted);
+  }, [searchTerm, minFollowers, maxFollowers, minMonthlyListeners, maxMonthlyListeners, sortBy, artists]);
+
   const handleDelete = async (artistId, artistName) => {
     try {
       const { error } = await supabase
@@ -118,6 +186,21 @@ export default function Artist() {
     }
   };
 
+  const exportToExcel = () => {
+    const ws = XLSX.utils.json_to_sheet(filteredArtists.map(a => ({
+      Artist: a.artist,
+      Followers: a.followers,
+      MonthlyListeners: a.monthlyListeners,
+      SocialLink: a.socialLink,
+      ArtistID: a.artistID,
+      ImageLink: a.imageLink
+    })));
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, "Artists");
+    XLSX.writeFile(wb, "artists.xlsx");
+    toast.success("Exported to Excel successfully!");
+  };
+
   return (
     <SidebarInset>
       <header className="flex h-16 shrink-0 items-center gap-2 bg-card shadow-apple">
@@ -136,16 +219,79 @@ export default function Artist() {
       <div className="flex flex-1 flex-col gap-6 p-6 bg-background text-foreground">
         <div className="flex justify-between items-center">
           <h1 className="text-3xl font-bold text-foreground">Artists</h1>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={fetchArtists}
-            className="rounded-apple border-accent text-accent hover:bg-accent hover:text-accent-foreground flex items-center gap-1"
-          >
-            <RefreshCw className="h-4 w-4" />
-            Refresh
-          </Button>
+          <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={exportToExcel}
+              className="rounded-apple border-accent text-accent hover:bg-accent hover:text-accent-foreground flex items-center gap-1"
+            >
+              <Download className="h-4 w-4" />
+              Export Excel
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={fetchArtists}
+              className="rounded-apple border-accent text-accent hover:bg-accent hover:text-accent-foreground flex items-center gap-1"
+            >
+              <RefreshCw className="h-4 w-4" />
+              Refresh
+            </Button>
+          </div>
         </div>
+        <ShadcnCard className="bg-card">
+          <CardContent className="p-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-4">
+              <Input
+                placeholder="Search by artist name"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="rounded-apple"
+              />
+              <Input
+                placeholder="Min followers"
+                value={minFollowers}
+                onChange={(e) => setMinFollowers(e.target.value)}
+                type="number"
+                className="rounded-apple"
+              />
+              <Input
+                placeholder="Max followers"
+                value={maxFollowers}
+                onChange={(e) => setMaxFollowers(e.target.value)}
+                type="number"
+                className="rounded-apple"
+              />
+              <Input
+                placeholder="Min monthly listeners"
+                value={minMonthlyListeners}
+                onChange={(e) => setMinMonthlyListeners(e.target.value)}
+                type="number"
+                className="rounded-apple"
+              />
+              <Input
+                placeholder="Max monthly listeners"
+                value={maxMonthlyListeners}
+                onChange={(e) => setMaxMonthlyListeners(e.target.value)}
+                type="number"
+                className="rounded-apple"
+              />
+              <Select value={sortBy} onValueChange={setSortBy}>
+                <SelectTrigger className="rounded-apple">
+                  <SelectValue placeholder="Sort by" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="date_desc">Newest First</SelectItem>
+                  <SelectItem value="followers_asc">Followers Asc</SelectItem>
+                  <SelectItem value="followers_desc">Followers Desc</SelectItem>
+                  <SelectItem value="listeners_asc">Listeners Asc</SelectItem>
+                  <SelectItem value="listeners_desc">Listeners Desc</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </CardContent>
+        </ShadcnCard>
         <div className="space-y-6">
           {isLoading ? (
             <p className="text-center text-muted-foreground">Loading artists...</p>
@@ -153,10 +299,10 @@ export default function Artist() {
             <p className="text-center text-destructive">
               Error loading artists: {fetchError}. Check console for details.
             </p>
-          ) : artists.length > 0 ? (
+          ) : filteredArtists.length > 0 ? (
             <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {artists.map((artist) => (
-                <Card
+              {filteredArtists.map((artist) => (
+                <ShadcnCard
                   key={artist.id}
                   className="rounded-apple shadow-apple bg-card border-none overflow-hidden transition-all duration-300 hover:shadow-[0_8px_24px_rgba(20,208,97,0.2)] hover:-translate-y-1"
                 >
@@ -167,19 +313,19 @@ export default function Artist() {
                       className="w-full h-48 object-cover"
                     />
                   </div>
-                  <CardBody className="p-4 space-y-2">
-                    <Typography variant="h6" className="text-foreground font-semibold truncate">
+                  <CardContent className="p-4 space-y-2">
+                    <CardTitle className="text-foreground font-semibold truncate">
                       {artist.artist || "Unknown Artist"}
-                    </Typography>
+                    </CardTitle>
                     <div className="space-y-1">
-                      <Typography variant="small" className="text-muted-foreground flex items-center gap-1">
+                      <p className="text-sm text-muted-foreground flex items-center gap-1">
                         <span className="font-medium text-foreground">Followers:</span>
                         <span>{artist.followers ? Number(artist.followers).toLocaleString() : "0"}</span>
-                      </Typography>
-                      <Typography variant="small" className="text-muted-foreground flex items-center gap-1">
+                      </p>
+                      <p className="text-sm text-muted-foreground flex items-center gap-1">
                         <span className="font-medium text-foreground">Monthly Listeners:</span>
                         <span>{artist.monthlyListeners ? Number(artist.monthlyListeners).toLocaleString() : "0"}</span>
-                      </Typography>
+                      </p>
                     </div>
                     <div className="flex gap-2 pt-2">
                       <Button
@@ -234,8 +380,8 @@ export default function Artist() {
                         </AlertDialogContent>
                       </AlertDialog>
                     </div>
-                  </CardBody>
-                </Card>
+                  </CardContent>
+                </ShadcnCard>
               ))}
             </div>
           ) : (
